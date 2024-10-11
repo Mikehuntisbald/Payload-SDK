@@ -130,10 +130,13 @@ void DjiUser_RunCameraStreamViewSample()
          << "--> [3] Top Camera\n"
          << endl;
     cin >> cameraIndexChar;
-
+    
+    uint64_t return_code;
     switch (cameraIndexChar) {
         case '0':
-            liveviewSample->StartFpvCameraStream(&DjiUser_ShowRgbImageCallback, &fpvName);
+            // cout<<OPEN_CV_INSTALLED<<endl;
+            return_code = liveviewSample->StartFpvCameraStream(&DjiUser_ShowRgbImageCallback, &fpvName);
+            cout << "return code is "<< return_code <<endl;
             break;
         case '1':
             liveviewSample->StartMainCameraStream(&DjiUser_ShowRgbImageCallback, &mainName);
@@ -186,8 +189,9 @@ void DjiUser_RunCameraStreamViewSample()
 static void DjiUser_ShowRgbImageCallback(CameraRGBImage img, void *userData)
 {
     string name = string(reinterpret_cast<char *>(userData));
-
+    cout<<"enter cb"<<endl;
 #ifdef OPEN_CV_INSTALLED
+    cout<<"opencv installed"<<endl;
     Mat mat(img.height, img.width, CV_8UC3, img.rawData.data(), img.width * 3);
 
     if (s_demoIndex == 0) {
@@ -281,6 +285,7 @@ static void DjiUser_ShowRgbImageCallback(CameraRGBImage img, void *userData)
 
     cv::waitKey(1);
 #endif
+    cout<<"opencv not installed"<<endl;
 }
 
 static T_DjiReturnCode DjiUser_GetCurrentFileDirPath(const char *filePath, uint32_t pathBufferSize, char *dirPath)
