@@ -4,6 +4,30 @@
 ![](https://img.shields.io/badge/platform-linux_|_rtos-blue.svg)
 ![](https://img.shields.io/badge/license-MIT-purple.svg)
 
+## How to use
+
+Download docker folder and unzip from https://drive.google.com/file/d/18pnYe561i4NAEYP10WiRGqzxyMFIalMI/view?usp=sharing.
+cd docker
+t=ultralytics/ultralytics:latest-jetson-jetpack5 && docker build --platform linux/arm64 -f Dockerfile-jetson-jetpack5 -t $t .
+xhost +local:root
+docker run --rm -it --privileged \        
+    --env="DISPLAY" \
+    --env="QT_X11_NO_MITSHM=1" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --env="ROS_MASTER_URI=http://nvidia:11311" \
+    --ipc=host \
+    --runtime=nvidia \
+    --network host \
+    -v /dev:/dev -v /dev/shm:/dev/shm \
+    ultralytics/ultralytics:latest-jetson-jetpack5
+    # -v /home/nvidia/test_yolov8:/test_yolov8 \
+In Docker Container:
+   cd Payload-SDK/cmake-build-debug/bin
+   sudo ./dji_sdk_demo_on_jetson_cxx
+   
+   Type d and d consecutively
+    
+
 ## What is the DJI Payload SDK?
 
 The DJI Payload SDK(PSDK), is a development kit provided by DJI to support developers to develop payload that can be
