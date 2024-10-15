@@ -37,6 +37,13 @@
 
 #endif
 
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <cstring>
+
+#include "shared_memory.hpp"
+using namespace boost::interprocess;
+
 /* Private constants ---------------------------------------------------------*/
 #define USER_PERCEPTION_TASK_STACK_SIZE    (1024)
 #define USER_PERCEPTION_DIRECTION_NUM      (12)
@@ -91,6 +98,8 @@ static const T_DjiTestPerceptionCameraPositionName positionName[] = {
     {.cameraPosition = RECTIFY_RIGHT_LEFT, .name = "right_l"},
     {.cameraPosition = RECTIFY_RIGHT_RIGHT, .name = "right_r"},
 };
+
+SharedMemoryManager& shmManager = SharedMemoryManager::getInstance();
 
 /* Private functions declaration ---------------------------------------------*/
 static void DjiTest_PerceptionImageCallback(T_DjiPerceptionImageInfo imageInfo, uint8_t *imageRawBuffer,
@@ -337,6 +346,16 @@ static void *DjiTest_StereoImagesDisplayTask(void *arg)
     char showFpsString[USER_PERCEPTION_DIRECTION_NUM][FPS_STRING_LEN] = {0};
     int i = 0;
 
+
+    // 从共享内存中读取数据
+    // std::string data = shmManager.getSharedMemoryData();
+    
+    // if (!data.empty()) {
+    //     std::cout << "Data read from shared memory: " << data << std::endl;
+    // } else {
+    //     std::cout << "No data read from shared memory." << std::endl;
+    // }
+
     while (true) {
         osalHandler->TaskSleepMs(1);
 #ifdef OPEN_CV_INSTALLED
@@ -348,6 +367,7 @@ static void *DjiTest_StereoImagesDisplayTask(void *arg)
         }
         cv::Mat cv_img_stereo = cv::Mat(pack->info.rawInfo.height, pack->info.rawInfo.width, CV_8U);
         int copySize = pack->info.rawInfo.height * pack->info.rawInfo.width;
+        shmManager.reSize(pack->info.rawInfo.height, pack->info.rawInfo.width, CV_8U);
         if (pack->imageRawBuffer) {
             memcpy(cv_img_stereo.data, pack->imageRawBuffer, copySize);
             osalHandler->Free(pack->imageRawBuffer);
@@ -384,6 +404,22 @@ static void *DjiTest_StereoImagesDisplayTask(void *arg)
         }
         cv::imshow(nameStr, cv_img_stereo);
         cv::waitKey(1);
+        // 将图像数据写入共享内存
+        if (!cv_img_stereo.isContinuous()) {
+            cv_img_stereo = cv_img_stereo.clone();  // 确保数据是连续的
+        }
+        if (positionName[i].cameraPosition % 2 > 0){
+            shmManager.writeSharedMemoryData(cv_img_stereo, 1);
+            // cv::imshow(nameStr, shmManager.getSharedMemoryData(1));
+        }else shmManager.writeSharedMemoryData(cv_img_stereo, 2); 
+        // cv::imshow(nameStr, shmManager.getSharedMemoryData(2));
+        // cv::waitKey(1);
+
+        // shmManager.publishImage();
+        // std::memcpy(shared_mem_ptr, cv_img_stereo.data, copySize);
+
+        // std::cout << "Image data written to shared memory." << std::endl;
+
 #else
         osalHandler->TaskSleepMs(1000);
         USER_LOG_WARN("Please install opencv to run this stereo image display sample.");
