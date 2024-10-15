@@ -44,6 +44,11 @@
 #include <camera_manager/test_camera_manager.h>
 #include "camera_manager/test_camera_manager_entry.h"
 
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <iostream>
+#include <cstring>
+
 /* Private constants ---------------------------------------------------------*/
 
 /* Private types -------------------------------------------------------------*/
@@ -56,7 +61,7 @@ static T_DjiReturnCode DjiTest_WriteHighPowerApplyPin(E_DjiPowerManagementPinSta
 
 /* Exported functions definition ---------------------------------------------*/
 int main(int argc, char **argv)
-{
+{    
     Application application(argc, argv);
     char inputChar;
     T_DjiOsalHandler *osalHandler = DjiPlatform_GetOsalHandler();
