@@ -39,12 +39,21 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../common/3rdparty)
 link_directories(${CMAKE_CURRENT_LIST_DIR}/../../../../../psdk_lib/lib/${TOOLCHAIN_NAME})
 link_libraries(${CMAKE_CURRENT_LIST_DIR}/../../../../../psdk_lib/lib/${TOOLCHAIN_NAME}/libpayloadsdk.a -lstdc++)
 
+# 查找 Boost 库
+find_package(Boost REQUIRED COMPONENTS system thread)
+
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 add_executable(${PROJECT_NAME}
         ${MODULE_APP_SRC}
         ${MODULE_SAMPLE_SRC}
         ${MODULE_COMMON_SRC}
         ${MODULE_HAL_SRC})
 
+target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} rt)
+    
 # Try to see if user has OpenCV installed
 # if yes, default callback will display the image
 find_package(OpenCV QUIET)
