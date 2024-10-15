@@ -6,8 +6,11 @@
 
 ## How to use
 
-Download docker folder and unzip from https://drive.google.com/file/d/18pnYe561i4NAEYP10WiRGqzxyMFIalMI/view?usp=sharing.
+Download docker folder and unzip from 
 
+https://drive.google.com/file/d/18pnYe561i4NAEYP10WiRGqzxyMFIalMI/view?usp=sharing.
+
+```sh
 cd docker
 t=ultralytics/ultralytics:latest-jetson-jetpack5 && docker build --platform linux/arm64 -f Dockerfile-jetson-jetpack5 -t $t .
 xhost +local:root
@@ -22,12 +25,16 @@ docker run --rm -it --privileged \
     -v /dev:/dev -v /dev/shm:/dev/shm \
     ultralytics/ultralytics:latest-jetson-jetpack5
     # -v /home/nvidia/test_yolov8:/test_yolov8 \
+```
+
 In Docker Container:
+
+```sh
    cd Payload-SDK/cmake-build-debug/bin
    sudo ./dji_sdk_demo_on_jetson_cxx
    
    Type d and d consecutively
-    
+```
 
 ## What is the DJI Payload SDK?
 
