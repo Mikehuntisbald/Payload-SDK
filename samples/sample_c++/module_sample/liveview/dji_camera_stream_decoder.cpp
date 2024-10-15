@@ -27,6 +27,9 @@
 #include "unistd.h"
 #include "pthread.h"
 #include "dji_logger.h"
+extern "C" {
+    #include <libavutil/imgutils.h>
+}
 
 /* Private constants ---------------------------------------------------------*/
 
@@ -78,13 +81,14 @@ bool DJICameraStreamDecoder::init()
     }
 
 #ifdef FFMPEG_INSTALLED
+    //avcodec_register_all();
     pCodecCtx = avcodec_alloc_context3(nullptr);
     if (!pCodecCtx) {
         return false;
     }
 
     pCodecCtx->thread_count = 4;
-    pCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    const AVCodec* pCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!pCodec || avcodec_open2(pCodecCtx, pCodec, nullptr) < 0) {
         return false;
     }
@@ -206,7 +210,21 @@ void DJICameraStreamDecoder::decodeBuffer(const uint8_t *buf, int bufLen)
 
         if (pkt.size > 0) {
             int gotPicture = 0;
-            avcodec_decode_video2(pCodecCtx, pFrameYUV, &gotPicture, &pkt);
+            int ret = avcodec_send_packet(pCodecCtx, &pkt);
+		if (ret < 0) {
+		    // 错误处理
+		    fprintf(stderr, "Error sending a packet for decoding\n");
+		}
+
+		// 接收解码后的帧
+		ret = avcodec_receive_frame(pCodecCtx, pFrameYUV);
+		if (ret == 0) {
+		    gotPicture = 1;  // 标记帧已成功接收
+		} else if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+		    gotPicture = 0;  // 需要更多数据或者到达流的结尾
+		} else {
+		    // 其他错误处理
+		}
 
             if (!gotPicture) {
                 ////DSTATUS_PRIVATE("Got Frame, but no picture\n");
@@ -223,9 +241,9 @@ void DJICameraStreamDecoder::decodeBuffer(const uint8_t *buf, int bufLen)
                 }
 
                 if (nullptr == rgbBuf) {
-                    bufSize = avpicture_get_size(AV_PIX_FMT_RGB24, w, h);
+                    bufSize = av_image_get_buffer_size(AV_PIX_FMT_RGB24, w, h, 1);
                     rgbBuf = (uint8_t *) av_malloc(bufSize);
-                    avpicture_fill((AVPicture *) pFrameRGB, rgbBuf, AV_PIX_FMT_RGB24, w, h);
+                    av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, rgbBuf, AV_PIX_FMT_RGB24, w, h, 1);
                 }
 
                 if (nullptr != pSwsCtx && nullptr != rgbBuf) {
@@ -242,7 +260,7 @@ void DJICameraStreamDecoder::decodeBuffer(const uint8_t *buf, int bufLen)
         }
     }
     pthread_mutex_unlock(&decodemutex);
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
 #endif
 }
 
